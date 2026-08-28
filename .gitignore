@@ -3,3 +3,7 @@ dist/
 .astro/
 .DS_Store
 *.log
+
+# Los posts los genera `pnpm sync:vault` desde el vault, y en CI se generan
+# solos. Commitearlos duplicaria la fuente de verdad.
+src/content/posts/*.md

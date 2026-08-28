@@ -1,35 +1,34 @@
 /**
- * Sincroniza el vault y publica lo que haya cambiado, en un solo paso.
+ * Publica lo que haya escrito en el vault.
  *
- * Es deliberadamente manual: la publicacion es una accion hacia afuera y se
- * dispara cuando uno decide, no cuando el editor guarda. `publicar: true` en
- * la nota dice *que* se publica; este comando dice *cuando*.
+ * Las notas viven en su propio repositorio y el sitio se construye desde ahi,
+ * asi que publicar es commitear el vault — no este repositorio. Aqui solo se
+ * valida antes de subir y se le da un empujon al despliegue para no esperar
+ * al reloj.
  *
- * Solo toca `src/content/posts`. Cualquier otro cambio del repositorio se
- * queda sin commitear: publicar un post no es el momento de arrastrar una
- * edicion de estilos a medio hacer.
+ * El disparo sigue siendo manual a proposito: `publicar: true` en la nota dice
+ * *que* se publica, este comando dice *cuando*.
  */
 
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { homedir } from "node:os";
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), "..");
-const POSTS = "src/content/posts";
+const VAULT = process.env.VAULT ?? join(homedir(), "Documentos", "Obsidian");
 
 function correr(comando, argumentos, opciones = {}) {
-  const resultado = spawnSync(comando, argumentos, {
-    cwd: RAIZ,
+  return spawnSync(comando, argumentos, {
     encoding: "utf8",
     stdio: opciones.silencioso ? "pipe" : "inherit",
     ...opciones,
   });
-  if (resultado.error) throw resultado.error;
-  return resultado;
 }
 
-function git(...argumentos) {
-  const resultado = correr("git", argumentos, { silencioso: true });
+function git(directorio, ...argumentos) {
+  const resultado = correr("git", ["-C", directorio, ...argumentos], { silencioso: true });
   if (resultado.status !== 0) {
     process.stderr.write(resultado.stderr ?? "");
     process.exit(resultado.status ?? 1);
@@ -37,53 +36,57 @@ function git(...argumentos) {
   return resultado.stdout.trim();
 }
 
-const rama = git("rev-parse", "--abbrev-ref", "HEAD");
-if (rama !== "main") {
-  console.error(`Estas en la rama "${rama}". El despliegue sale de main.`);
+if (!existsSync(join(VAULT, ".git"))) {
+  console.error(`El vault de ${VAULT} no es un repositorio git.`);
   process.exit(1);
 }
 
-const sincronizacion = correr(process.execPath, ["scripts/sincronizar-vault.mjs"]);
-if (sincronizacion.status !== 0) process.exit(sincronizacion.status ?? 1);
-
-const cambios = git("status", "--porcelain", "--", POSTS);
-if (cambios === "") {
-  console.log("\nEl sitio ya esta al dia: no cambio ningun post.");
-  process.exit(0);
+// Sincronizar antes de subir no es para dejar los archivos: es la validacion.
+// Un slug repetido o una nota que no cumple el esquema falla aqui, en la
+// maquina, y no a mitad del despliegue.
+const sincronizacion = correr(process.execPath, ["scripts/sincronizar-vault.mjs"], { cwd: RAIZ });
+if (sincronizacion.status !== 0) {
+  console.error("\nLa sincronizacion fallo: no se sube nada.");
+  process.exit(sincronizacion.status ?? 1);
 }
 
-git("add", "--", POSTS);
+const rama = git(VAULT, "rev-parse", "--abbrev-ref", "HEAD");
+if (rama !== "main") {
+  console.error(`El vault esta en la rama "${rama}". El sitio se construye desde main.`);
+  process.exit(1);
+}
 
-// El resumen del commit sale de lo que git dice que cambio, no de lo que el
-// script cree haber escrito: si algo no llego al indice, el mensaje no miente.
-const preparados = git("diff", "--cached", "--name-status", "--", POSTS)
-  .split("\n")
-  .filter(Boolean)
-  .map((linea) => {
-    const [estado, ruta] = linea.split(/\t/);
-    const slug = ruta.replace(`${POSTS}/`, "").replace(/\.md$/, "");
-    return { estado: estado[0], slug };
-  });
+const pendientes = git(VAULT, "status", "--porcelain");
+if (pendientes === "") {
+  console.log("\nEl vault no tiene cambios sin subir.");
+} else {
+  git(VAULT, "add", "-A");
 
-const nuevos = preparados.filter((c) => c.estado === "A");
-const editados = preparados.filter((c) => c.estado === "M");
-const borrados = preparados.filter((c) => c.estado === "D");
+  const archivos = git(VAULT, "diff", "--cached", "--name-only")
+    .split("\n")
+    .filter(Boolean);
+  const notas = archivos
+    .filter((ruta) => ruta.endsWith(".md"))
+    .map((ruta) => ruta.split("/").pop().replace(/\.md$/, ""));
 
-const partes = [];
-if (nuevos.length) partes.push(`publica ${nuevos.map((c) => c.slug).join(", ")}`);
-if (editados.length) partes.push(`actualiza ${editados.map((c) => c.slug).join(", ")}`);
-if (borrados.length) partes.push(`retira ${borrados.map((c) => c.slug).join(", ")}`);
+  const asunto =
+    notas.length === 0
+      ? `notas: ${archivos.length} archivo(s)`
+      : `notas: ${notas.slice(0, 3).join(", ")}${notas.length > 3 ? ` y ${notas.length - 3} mas` : ""}`;
 
-const asunto = `content: ${partes.join("; ")}`;
-const mensaje =
-  asunto.length <= 72 ? asunto : `content: ${preparados.length} post(s) del vault\n\n${partes.join("\n")}`;
+  git(VAULT, "commit", "-m", asunto.length <= 72 ? asunto : `notas: ${archivos.length} archivo(s)`);
+  git(VAULT, "push", "origin", "main");
+  console.log(`\nVault subido: ${asunto}`);
+}
 
-git("commit", "-m", mensaje);
-console.log(`\n${mensaje.split("\n")[0]}`);
-
-git("push", "origin", "main");
-
-const remoto = git("remote", "get-url", "origin")
-  .replace(/^git@github\.com:/, "https://github.com/")
-  .replace(/\.git$/, "");
-console.log(`\nDesplegando: ${remoto}/actions`);
+// El workflow del blog corre cada cuarto de hora por su cuenta; esto es para
+// no esperarlo. Si falla —sin gh, sin permisos— no es un error: el despliegue
+// va a salir igual, solo que mas tarde.
+const empujon = correr("gh", ["workflow", "run", "deploy.yml", "--repo", "BranTuxLinux/BranTuxLinux.github.io"], {
+  silencioso: true,
+});
+console.log(
+  empujon.status === 0
+    ? "Despliegue disparado: https://github.com/BranTuxLinux/BranTuxLinux.github.io/actions"
+    : "Sin disparar a mano: el sitio se reconstruye solo en menos de 15 minutos."
+);

@@ -1,8 +1,15 @@
 name: Desplegar en GitHub Pages
 
 on:
+  # Cambios en el codigo del sitio.
   push:
     branches: [main]
+  # Cambios en las notas: el vault es otro repositorio y no dispara nada aqui,
+  # asi que se revisa cada cuarto de hora. Publicar una nota tarda eso como
+  # mucho.
+  schedule:
+    - cron: "*/15 * * * *"
+  # Para no esperar el cuarto de hora: `gh workflow run deploy.yml`.
   workflow_dispatch:
 
 permissions:
@@ -10,8 +17,6 @@ permissions:
   pages: write
   id-token: write
 
-# Un despliegue a la vez. Si llegan dos pushes seguidos, el segundo espera al
-# primero en vez de pisarlo a mitad de subida.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -20,24 +25,37 @@ jobs:
   construir:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Codigo del sitio
+        uses: actions/checkout@v5
+
+      # El vault es privado. La llave de despliegue es de solo lectura: si
+      # este runner se compromete, no puede escribir en las notas.
+      - name: Notas del vault
+        uses: actions/checkout@v5
+        with:
+          repository: BranTuxLinux/obsidian-vault
+          ssh-key: ${{ secrets.VAULT_DEPLOY_KEY }}
+          path: vault
 
       - uses: pnpm/action-setup@v4
         with:
           version: 10
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
-      # Los posts ya vienen commiteados: el vault de Obsidian es local y este
-      # runner no lo ve. `pnpm sync:vault` corre en la maquina, no aqui.
+      - name: Traer las notas publicables
+        run: pnpm sync:vault
+        env:
+          VAULT: ${{ github.workspace }}/vault
+
       - run: pnpm build
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: dist
 
