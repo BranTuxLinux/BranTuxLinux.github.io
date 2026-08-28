@@ -8,7 +8,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "sync:vault": "node scripts/sincronizar-vault.mjs",
-    "check": "astro check"
+    "check": "astro check",
+    "publicar": "node scripts/publicar.mjs"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.19",

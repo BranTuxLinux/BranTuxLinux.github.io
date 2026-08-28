@@ -10,11 +10,16 @@ cosa que se edite ahí a mano se pierde en la siguiente sincronización.
 ## Publicar una nota
 
 1. En la nota del vault, agregar `publicar: true` al frontmatter.
-2. `pnpm sync:vault`
-3. Revisar con `pnpm dev`.
-4. Commitear `src/content/posts/` y hacer push. Actions construye y despliega.
+2. `pnpm publicar`
 
-Quitar `publicar: true` y volver a sincronizar borra el post del sitio.
+Eso sincroniza, commitea y hace push; Actions construye y despliega. Para
+revisar antes de que salga: `pnpm sync:vault` y `pnpm dev`.
+
+Quitar `publicar: true` y volver a publicar borra el post del sitio.
+
+`pnpm publicar` solo toca `src/content/posts/`: una edición de estilos a medio
+hacer no se cuela en el commit del post. Y solo corre desde `main`, que es la
+rama de la que sale el despliegue.
 
 ## Frontmatter que lee el script
 
@@ -42,8 +47,9 @@ Quitar `publicar: true` y volver a sincronizar borra el post del sitio.
 ## Comandos
 
 ```bash
+pnpm publicar     # sincroniza + commit + push, en un paso
 pnpm dev          # servidor local en :4321
-pnpm sync:vault   # trae las notas publicables del vault
+pnpm sync:vault   # solo trae las notas publicables, sin publicar
 pnpm build        # genera dist/
 pnpm preview      # sirve dist/ como lo verá el visitante
 ```

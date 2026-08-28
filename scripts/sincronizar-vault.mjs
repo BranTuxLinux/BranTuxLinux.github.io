@@ -146,10 +146,14 @@ async function main() {
     process.exit(1);
   }
 
-  // La carpeta es generada: se rehace entera para que despublicar una nota
-  // —quitarle `publicar: true`— la borre del sitio de verdad.
-  await rm(DESTINO, { recursive: true, force: true });
+  // Los posts son generados: se borran todos y se reescriben, para que
+  // despublicar una nota —quitarle `publicar: true`— la borre del sitio de
+  // verdad. Se van solo los `.md`: `.gitkeep` sostiene la carpeta en git y
+  // borrarlo dejaba una baja espuria en cada sincronizacion.
   await mkdir(DESTINO, { recursive: true });
+  for (const previo of await readdir(DESTINO)) {
+    if (extname(previo) === ".md") await rm(join(DESTINO, previo));
+  }
 
   for (const nota of candidatas) {
     const cuerpo = envolverTablas(
