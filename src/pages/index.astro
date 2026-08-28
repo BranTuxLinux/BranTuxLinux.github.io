@@ -1,0 +1,46 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../layouts/Base.astro";
+import { fechaLarga } from "../lib/sitio";
+
+// Un borrador se sincroniza pero no se lista: asi se puede escribir contra el
+// sitio de verdad sin publicarlo todavia.
+const posts = (await getCollection("posts", ({ data }) => !data.borrador)).sort(
+  (a, b) => b.data.fecha.getTime() - a.data.fecha.getTime()
+);
+---
+
+<Base>
+  {posts.length === 0 ? (
+    <div class="vacio">
+      <p>Todavia no hay nada publicado.</p>
+      <p>
+        Marca una nota del vault con <code>publicar: true</code> en su frontmatter
+        y corre <code>pnpm sync:vault</code>.
+      </p>
+    </div>
+  ) : (
+    <ul class="lista">
+      {posts.map((post) => (
+        <li>
+          <article>
+            <time class="post-item__fecha" datetime={post.data.fecha.toISOString()}>
+              {fechaLarga(post.data.fecha)}
+            </time>
+            <h2 class="post-item__titulo">
+              <a href={`/posts/${post.id}/`}>{post.data.titulo}</a>
+            </h2>
+            <p class="post-item__resumen">{post.data.resumen}</p>
+            {post.data.tags.length > 0 && (
+              <ul class="etiquetas">
+                {post.data.tags.map((tag) => (
+                  <li>{tag}</li>
+                ))}
+              </ul>
+            )}
+          </article>
+        </li>
+      ))}
+    </ul>
+  )}
+</Base>

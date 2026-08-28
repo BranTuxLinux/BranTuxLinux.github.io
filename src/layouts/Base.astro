@@ -1,0 +1,62 @@
+---
+import { sitio } from "../lib/sitio";
+import "../styles/global.css";
+
+interface Props {
+  titulo?: string;
+  descripcion?: string;
+  /** Un post declara su fecha para que las redes muestren la correcta. */
+  publicado?: Date;
+}
+
+const { titulo, descripcion = sitio.descripcion, publicado } = Astro.props;
+const tituloCompleto = titulo ? `${titulo} · ${sitio.titulo}` : sitio.titulo;
+const canonica = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang={sitio.idioma}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{tituloCompleto}</title>
+    <meta name="description" content={descripcion} />
+    <meta name="author" content={sitio.autor} />
+    <link rel="canonical" href={canonica} />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={sitio.titulo}
+      href={new URL("rss.xml", Astro.site)}
+    />
+    <meta property="og:type" content={publicado ? "article" : "website"} />
+    <meta property="og:title" content={tituloCompleto} />
+    <meta property="og:description" content={descripcion} />
+    <meta property="og:url" content={canonica} />
+    {publicado && (
+      <meta property="article:published_time" content={publicado.toISOString()} />
+    )}
+    <meta name="generator" content={Astro.generator} />
+  </head>
+  <body>
+    <div class="contenedor">
+      <header class="cabecera">
+        <a class="cabecera__marca" href="/">{sitio.titulo}</a>
+        <nav class="cabecera__nav">
+          {sitio.enlaces.map((enlace) => (
+            <a href={enlace.href}>{enlace.texto}</a>
+          ))}
+        </nav>
+      </header>
+
+      <main>
+        <slot />
+      </main>
+
+      <footer class="pie">
+        <span>{sitio.autor}</span>
+        <span>Escrito en Obsidian, publicado con Astro.</span>
+      </footer>
+    </div>
+  </body>
+</html>

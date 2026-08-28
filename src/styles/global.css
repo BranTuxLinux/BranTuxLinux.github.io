@@ -1,0 +1,269 @@
+/*
+ * Un solo archivo de estilos: el sitio son tres plantillas y no justifica un
+ * framework. Los colores viven como variables para que el tema oscuro no
+ * duplique reglas, solo valores.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --fondo: #fbfbfa;
+  --fondo-tenue: #f1f0ee;
+  --texto: #1f1f1f;
+  --texto-tenue: #5d5d5d;
+  --borde: #e2e0dc;
+  --acento: #1793d1;
+  --acento-tenue: #0f6ea0;
+
+  --mono: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+  --ancho: 42rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #0f0f0f;
+    --fondo-tenue: #1a1a1a;
+    --texto: #c5c8c6;
+    --texto-tenue: #707880;
+    --borde: #2a2a2a;
+    --acento: #1793d1;
+    --acento-tenue: #4fb4e8;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0 1.25rem 5rem;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--mono);
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-text-size-adjust: 100%;
+}
+
+.contenedor {
+  max-width: var(--ancho);
+  margin: 0 auto;
+}
+
+a {
+  color: var(--acento);
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--acento-tenue);
+}
+
+/* Cabecera */
+
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 2.5rem 0 2rem;
+  border-bottom: 1px solid var(--borde);
+  margin-bottom: 2.5rem;
+}
+
+.cabecera__marca {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--texto);
+  text-decoration: none;
+}
+
+.cabecera__marca::before {
+  content: "~/ ";
+  color: var(--acento);
+}
+
+.cabecera__nav {
+  display: flex;
+  gap: 1.25rem;
+  font-size: 0.8125rem;
+}
+
+/* Objetivos tactiles: se lee en el telefono tanto como en el escritorio. */
+.cabecera__nav a,
+.pie a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+/* Lista de posts */
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.post-item__fecha {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--texto-tenue);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 0.25rem;
+}
+
+.post-item__titulo {
+  margin: 0 0 0.35rem;
+  font-size: 1.0625rem;
+  line-height: 1.4;
+}
+
+.post-item__titulo a {
+  text-decoration: none;
+  color: var(--texto);
+}
+
+.post-item__titulo a:hover {
+  color: var(--acento);
+}
+
+.post-item__resumen {
+  margin: 0 0 0.5rem;
+  color: var(--texto-tenue);
+}
+
+.etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.6875rem;
+}
+
+.etiquetas li {
+  border: 1px solid var(--borde);
+  border-radius: 3px;
+  padding: 0.1rem 0.45rem;
+  color: var(--texto-tenue);
+}
+
+.vacio {
+  color: var(--texto-tenue);
+  border: 1px dashed var(--borde);
+  border-radius: 6px;
+  padding: 1.5rem;
+}
+
+.vacio code {
+  color: var(--acento);
+}
+
+/* Post */
+
+.post__cabecera {
+  margin-bottom: 2.5rem;
+}
+
+.post__titulo {
+  font-size: 1.5rem;
+  line-height: 1.3;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.post__meta {
+  font-size: 0.75rem;
+  color: var(--texto-tenue);
+  font-variant-numeric: tabular-nums;
+}
+
+.prosa h2 {
+  font-size: 1.125rem;
+  margin: 2.5rem 0 0.75rem;
+}
+
+.prosa h3 {
+  font-size: 1rem;
+  margin: 2rem 0 0.5rem;
+}
+
+.prosa img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+
+.prosa pre {
+  background: var(--fondo-tenue);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.prosa :not(pre) > code {
+  background: var(--fondo-tenue);
+  border-radius: 3px;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.875em;
+}
+
+.prosa blockquote {
+  margin: 1.5rem 0;
+  padding-left: 1rem;
+  border-left: 2px solid var(--acento);
+  color: var(--texto-tenue);
+}
+
+/* Una tabla ancha se desplaza sola; la pagina nunca se desplaza en horizontal. */
+.prosa .tabla-scroll {
+  overflow-x: auto;
+}
+
+.prosa table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.8125rem;
+}
+
+.prosa th,
+.prosa td {
+  border: 1px solid var(--borde);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}
+
+.prosa th {
+  background: var(--fondo-tenue);
+}
+
+.prosa hr {
+  border: 0;
+  border-top: 1px solid var(--borde);
+  margin: 2.5rem 0;
+}
+
+/* Pie */
+
+.pie {
+  margin-top: 4rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--borde);
+  font-size: 0.75rem;
+  color: var(--texto-tenue);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+}

@@ -1,0 +1,4 @@
+# esbuild necesita su postinstall para dejar el binario; sin el, astro build
+# muere al arrancar el bundler.
+allowBuilds:
+  esbuild: true
